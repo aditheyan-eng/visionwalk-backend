@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = "https://visionwalk.vercel.app", allowCredentials = "true")
 public class ApiController {
 	@Autowired 
 	private AuthService authService;
