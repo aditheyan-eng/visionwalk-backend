@@ -2,7 +2,7 @@ package com.visionwalk.backend.controller;
 
 import com.visionwalk.backend.model.*;
 import com.visionwalk.backend.repository.*;
-import com.visionwalk.backend.service.EmailService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class ApiController {
     @Autowired private UserRepository userRepository;
     @Autowired private LocationRepository locationRepository;
     @Autowired private CustomObjectRepository objectRepository;
-    @Autowired private EmailService emailService;
+   
 
     // --- 1. SIGNUP ---
     @PostMapping("/signup")
@@ -63,20 +63,7 @@ public class ApiController {
         return ResponseEntity.ok(userRepository.save(user));
     }
 
-    // --- 4. EMERGENCY ALERT ---
-    @PostMapping("/alert")
-    public ResponseEntity<?> sendAlert(@RequestBody Map<String, Object> payload) {
-        Long userId = Long.parseLong(payload.get("userId").toString());
-        double lat = Double.parseDouble(payload.get("lat").toString());
-        double lng = Double.parseDouble(payload.get("lng").toString());
-
-        User user = userRepository.findById(userId).orElseThrow();
-        if (user.getGuardianEmail() != null && !user.getGuardianEmail().isEmpty()) {
-            emailService.sendEmergencyAlert(user.getGuardianEmail(), user.getName(), lat, lng);
-            return ResponseEntity.ok("Alert Sent");
-        }
-        return ResponseEntity.badRequest().body("Guardian Email not set.");
-    }
+ 
 
     // --- 5. SAVED LOCATIONS ---
     @PostMapping("/locations")
