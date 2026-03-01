@@ -27,6 +27,7 @@ public class SecurityConfig {
             // 3. Make all /api/ endpoints public so React can reach the login controller
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/**").permitAll()
+                .requestMatchers("/api/locations/**").permitAll() // <-- You need to add this line!
                 .anyRequest().authenticated()
             );
             

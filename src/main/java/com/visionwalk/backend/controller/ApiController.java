@@ -16,19 +16,17 @@ import java.util.Optional;
 @RequestMapping("/api")
 @CrossOrigin(origins = "https://visionwalk.vercel.app", allowCredentials = "true")
 public class ApiController {
-	@Autowired 
-	private AuthService authService;
+    @Autowired 
+    private AuthService authService;
     @Autowired private UserRepository userRepository;
     @Autowired private LocationRepository locationRepository;
     @Autowired private CustomObjectRepository objectRepository;
     @Autowired private EmailService emailService;
 
-    // --- 1. SIGNUP (New) ---
- // --- 1. SIGNUP ---
+    // --- 1. SIGNUP ---
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody Map<String, String> payload) {
         try {
-            // We call registerUser instead of verifyGoogleToken
             User user = authService.registerUser(
                 payload.get("name"),
                 payload.get("email"),
@@ -44,7 +42,6 @@ public class ApiController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
         try {
-            // We call authenticate instead of verifyGoogleToken
             User user = authService.authenticate(
                 payload.get("email"),
                 payload.get("password")
@@ -89,8 +86,10 @@ public class ApiController {
 
         SavedLocation loc = new SavedLocation();
         loc.setName((String) payload.get("name"));
-        loc.setLatitude(Double.parseDouble(payload.get("latitude").toString()));
-        loc.setLongitude(Double.parseDouble(payload.get("longitude").toString()));
+        
+        // MATCHED WITH REACT: Using "lat" and "lng" instead of "latitude" and "longitude"
+        loc.setLatitude(Double.parseDouble(payload.get("lat").toString()));
+        loc.setLongitude(Double.parseDouble(payload.get("lng").toString()));
         loc.setUser(user);
 
         return ResponseEntity.ok(locationRepository.save(loc));
@@ -102,8 +101,9 @@ public class ApiController {
         return loc.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/locations")
-    public ResponseEntity<List<SavedLocation>> getAllLocations(@RequestParam Long userId) {
+    // MATCHED WITH REACT: Changed to @PathVariable so it correctly reads /api/locations/{userId}
+    @GetMapping("/locations/{userId}")
+    public ResponseEntity<List<SavedLocation>> getAllLocations(@PathVariable Long userId) {
         return ResponseEntity.ok(locationRepository.findByUserId(userId));
     }
 
