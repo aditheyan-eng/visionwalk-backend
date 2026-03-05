@@ -62,7 +62,26 @@ public class ApiController {
         user.setGuardianEmail(payload.get("guardianEmail"));
         return ResponseEntity.ok(userRepository.save(user));
     }
+ // ==========================================
+    // ADMIN ROUTES
+    // ==========================================
+    
+    // Get all users
+    @GetMapping("/admin/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userRepository.findAll());
+    }
 
+    // Delete a user by ID
+    @DeleteMapping("/admin/users/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            userRepository.deleteById(id);
+            return ResponseEntity.ok().body(Map.of("message", "User deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete user");
+        }
+    }
  
 
     // --- 5. SAVED LOCATIONS ---
