@@ -38,14 +38,30 @@ public class ApiController {
         }
     }
 
-    // --- 2. LOGIN ---
+ // --- 2. LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String password = payload.get("password");
+
+        // 🚨 SECURE BACKEND ADMIN CHECK 🚨
+        // Change the email and password here to whatever you want your admin credentials to be!
+        if ("admin@visionwalk.com".equals(email) && "admin123".equals(password)) {
+            System.out.println("🛡️ Admin Logged In!");
+            
+            // Create a custom response specifically for the Admin
+            Map<String, Object> adminResponse = new java.util.HashMap<>();
+            adminResponse.put("id", 0); // Special ID for Admin
+            adminResponse.put("name", "Administrator");
+            adminResponse.put("email", "admin@visionwalk.com");
+            adminResponse.put("role", "ADMIN"); // React looks for this flag to redirect to /admin
+            
+            return ResponseEntity.ok(adminResponse);
+        }
+
+        // --- NORMAL USER LOGIN FLOW ---
         try {
-            User user = authService.authenticate(
-                payload.get("email"),
-                payload.get("password")
-            );
+            User user = authService.authenticate(email, password);
             System.out.println("✅ Login successful for: " + user.getEmail());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
