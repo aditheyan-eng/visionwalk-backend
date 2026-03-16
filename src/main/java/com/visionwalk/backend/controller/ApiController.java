@@ -78,6 +78,8 @@ public class ApiController {
     }
  // ==========================================
     // CLOUD VISION API (ENVIRONMENT SCANNER)
+ // ==========================================
+    // FREE CLOUD NARRATOR (HUGGING FACE API)
     // ==========================================
     @PostMapping("/vision/analyze")
     public ResponseEntity<?> analyzeEnvironment(@RequestBody Map<String, String> payload) {
@@ -93,46 +95,51 @@ public class ApiController {
             String imageString = parts.length > 1 ? parts[1] : parts[0];
             byte[] imageBytes = java.util.Base64.getDecoder().decode(imageString);
 
-            // 2. Build the request for Google Cloud AI
-            ByteString imgBytes = ByteString.copyFrom(imageBytes);
-            Image img = Image.newBuilder().setContent(imgBytes).build();
-            
-            // We want LABEL_DETECTION (identifies objects, environments, surfaces)
-            Feature feat = Feature.newBuilder().setType(Feature.Type.LABEL_DETECTION).setMaxResults(10).build();
-            AnnotateImageRequest request = AnnotateImageRequest.newBuilder().addFeatures(feat).setImage(img).build();
-            List<AnnotateImageRequest> requests = new ArrayList<>();
-            requests.add(request);
-
-            // 3. Send to Google's Supercomputers
-            List<String> detectedLabels = new ArrayList<>();
-            
-            try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
-                BatchAnnotateImagesResponse response = client.batchAnnotateImages(requests);
-                List<AnnotateImageResponse> responses = response.getResponsesList();
-
-                for (AnnotateImageResponse res : responses) {
-                    if (res.hasError()) {
-                        System.err.println("Google AI Error: " + res.getError().getMessage());
-                        return ResponseEntity.status(500).body(Map.of("error", res.getError().getMessage()));
-                    }
-                    
-                    // Extract the text of everything it saw!
-                    for (EntityAnnotation annotation : res.getLabelAnnotationsList()) {
-                        detectedLabels.add(annotation.getDescription().toLowerCase());
-                    }
-                }
+            // 2. Setup the free Hugging Face API connection
+            // We are using the BLIP Image Captioning model
+            String hfToken = System.getenv("HF_TOKEN"); // We will set this in Render!
+            if (hfToken == null) {
+                return ResponseEntity.status(500).body(Map.of("error", "API Token missing"));
             }
 
-            // 4. Send the list of objects back to React
+            java.net.URL url = new java.net.URL("https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base");
+            java.net.HttpURLConnection con = (java.net.HttpURLConnection) url.openConnection();
+            con.setRequestMethod("POST");
+            con.setRequestProperty("Authorization", "Bearer " + hfToken);
+            con.setRequestProperty("Content-Type", "application/octet-stream");
+            con.setDoOutput(true);
+
+            // 3. Send the image to Hugging Face
+            try (java.io.OutputStream os = con.getOutputStream()) {
+                os.write(imageBytes);
+            }
+
+            // 4. Read the AI's response
+            java.io.InputStream inputStream = con.getResponseCode() >= 400 ? con.getErrorStream() : con.getInputStream();
+            String responseStr = new String(inputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+
+            // 5. Hugging Face returns JSON like: [{"generated_text": "a flight of stairs and a wall"}]
+            // We extract the sentence and send it back to React in the "labels" array
+            List<String> detectedLabels = new ArrayList<>();
+            
+            // Simple string extraction to avoid importing massive JSON libraries
+            if (responseStr.contains("generated_text")) {
+                String caption = responseStr.split("\"generated_text\":\"")[1].split("\"")[0];
+                detectedLabels.add(caption.toLowerCase());
+                System.out.println("Hugging Face Saw: " + caption);
+            } else {
+                detectedLabels.add("clear path");
+            }
+
+            // Send back to React
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("labels", detectedLabels);
             
-            System.out.println("Cloud AI Saw: " + detectedLabels);
             return ResponseEntity.ok(responseMap);
             
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("error", "Vision API failed to process image"));
+            return ResponseEntity.status(500).body(Map.of("error", "Free Vision API failed"));
         }
     }
     // --- 3. GUARDIAN ---
