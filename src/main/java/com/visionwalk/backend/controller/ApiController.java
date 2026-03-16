@@ -1,6 +1,7 @@
 package com.visionwalk.backend.controller;
 
 import com.visionwalk.backend.model.*;
+
 import com.google.cloud.vision.v1.*;
 import com.google.protobuf.ByteString;
 import java.util.ArrayList;
@@ -17,6 +18,8 @@ import com.visionwalk.backend.service.AuthService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api")
@@ -140,6 +143,20 @@ public class ApiController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", "Free Vision API failed"));
+        }
+    }
+    
+// 🚨 Add this inside your ApiController 🚨
+    
+    @DeleteMapping("/locations/{id}") // Ensure this matches your API path structure
+    public ResponseEntity<?> deleteLocation(@PathVariable Long id) {
+        try {
+            // Replace 'locationRepository' with whatever you named your database interface!
+            locationRepository.deleteById(id);
+            
+            return ResponseEntity.ok().body("Location deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error deleting location: " + e.getMessage());
         }
     }
     // --- 3. GUARDIAN ---
